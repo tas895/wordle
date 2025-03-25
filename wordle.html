@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!-- INSERT URL HERE -->
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle</title>
+<style type="text/css">
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    h1 {
+        font-family: 'Times New Roman', Times, serif;
+        text-align: center;
+        color: #6aaa64;
+        font-weight: bold;
+    }
+    /* Responsive to 700px */
+    @media screen and (min-width: 700px) {
+        .container {
+            width: 100%;
+        }
+    }
+    .board {
+        display: grid;
+        grid-template-columns: repeat(5, 70px);
+        grid-template-rows: repeat(6, 70px);
+        justify-content: center;
+        cursor: text;
+        max-width: 450px;
+        border: solid gray 5px;
+        margin: 0 auto;
+        background-color: white;
+        gap: 5px;
+        padding: 5px;
+        align-items: stretch;
+    }
+    .row {
+        display: contents;
+    }
+    .square {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: solid gray 2px;
+        font-size: 24px;
+        color: #9E4770;
+        text-align: center;
+        background-color: white;
+    }
+    input.square-input {
+        text-align: center;
+        width: 100%;
+        height: 100%;
+        font-size: 32px;
+        font-weight: bold;
+        font-family: 'Times New Roman', Times, serif;
+        border: none;
+    }
+    input.square-input:focus {
+        border: solid, #c9b458, 2px;
+        outline: none;
+    }
+    .button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 25px;
+    }
+    button {
+        background-color: #878a8c;
+        margin-top: 25px;
+        margin-left: 700px;
+        width: 90px;
+        height: 70px;
+        color: white;
+        font-weight: bold;
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 20px;
+        border:#6aaa64;
+    }
+    button.button:hover {
+        background-color: #6aaa64;
+    }
+    button.revealed {
+        background-color: #c9b458;
+        color: white;
+    }
+    .keyboard {
+        display: grid;
+        grid-template-columns: repeat(7, 70px);
+        gap: 1px;
+        max-width: 200px;
+        padding: 10px;
+    }
+</style>
+</head>
+<body>
+    <h1>Wordle</h1>
+    <div class ="board"></div>
+    <button class = "button" type= "button">Show Answer</button>    <!--button to show the answer -->
+    <div class = "keyboard"></div>  <!--keyboard -->
+    <script>
+    //Creates the grid of 5x6 squares for the woordle board
+    let answer = "";  //Need to use a global variable for answer for this to work
+    const NUM_ROWS = 6;         //6 guesses
+    const NUM_SQUARES = 5;     //5 letters per row
+    let currentRow = 0;
+    const board = document.querySelector(".board");
+
+    //API integration
+    fetch("https://random-word-api.vercel.app/api?words=1&length=5")    //Using API to request the "answer" to the woordle game, only giving 5 letter words
+        .then((response) => response.json())    //Handle successful completion in first then
+        .then((data) => {
+            if(data && data.length > 0) {       //Stores answer
+                answer = data[0].toUpperCase(); //Stores answer in upper case to keep everything consistent
+                console.log("Answer: ", answer);
+            } else {
+                console.log("No answer found.");    //This is here as a "failsafe" there should always be an answer but this can help me troubleshoot if there's an issue with the API
+            }
+        })
+        .catch(error => console.log(error));    //Where you handle any errors
+    
+    //Generates game board
+    for(let row = 0; row < NUM_ROWS; row++) {       //Loops through each row
+        const rowDiv = document.createElement("div");  //Creates the row container 
+        rowDiv.classList.add("row");    //Adds a class so that I can use CSS to style each row
+        rowDiv.dataset.row = row;   //Stores the row number to help track the answer
+
+        for(let col = 0; col < NUM_SQUARES; col++) {    //Loops through each column in the row
+            let square = document.createElement("div");     //Creates an individual square for each letter
+            square.classList.add("square");     //Adds a class so I can style that square in CSS
+
+            //Allows for text input inside of the board
+            let input = document.createElement("input");
+            input.type = "text";
+            input.maxLength = 1;    //Ensures only 1 letter can be added per space
+            input.classList.add("square-input");
+            input.dataset.row = row;    //Row index
+            input.dataset.col = col;    //Column index
+            input.disabled = row !== 0;  //Only able to use the first row at the start
+            square.appendChild(input);  //Adds the text input field in the square div
+            rowDiv.appendChild(square); //Adds the square div (now containing the input) into the row div organizing the squares into rows
+        }
+        board.appendChild(rowDiv);
+    }
+    //Function which allows the user to input in the next row
+    function enableRow(row) {
+        let rowInputs = document.querySelectorAll(`.square-input[data-row="${row}"]`);  
+        rowInputs.forEach(input => input.disabled = false); //Loops through each input field in the row to make it work
+        rowInputs[0].focus();   //Ensures the user can start typing in the first box of the following row after input on prior row complete
+    }
+
+    //Creates the keyboard (display only)
+    const keyboardContainer = document.querySelector(".keyboard");  //keyboard container
+    const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");    //Creates an array of individual letters for the keyboard
+    keys.forEach(letter => {    //Loops through each letter in the keyboard array
+        const button = document.createElement("button");    //Element for each inidivual letter to display like a button
+        button.classList.add("keyboard-button");        //Connects to the keyboard CSS
+        button.textContent = letter;    //Makes sure each button is labeled with the correct letter
+        button.disabled = true;     //This makes it just a keyboard display, without the keyboard functionality
+        keyboardContainer.appendChild(button);  //Adds the button to the keyboard container
+    });
+    
+    //Handles the user keyboard input
+    document.addEventListener("keydown", (event) => {   //Event listener for a button being pressed on the keyboard to "trigger" the rest of the code to "happen"
+        let input = document.activeElement;     //Checks where the user is typing on the page
+        if (!input || !input.classList.contains("square-input")) return;    //Only allows the user to type in only boxes called "square-input"
+
+        let key = event.key.toUpperCase();      //Turns each letter to a capital letter - this is a style choice but also makes it easier if everything stays capital
+        event.preventDefault();     //Prevents default action of keys like "enter" before the full 5 letter guess is completed
+        //If the enter key is pressed
+        if(event.key === "Enter") {
+            let row = parseInt(input.dataset.row);  //Get the row number of the current input
+            let lastInputInRow = document.querySelector(`.square-input[data-row="${row}"][data-col="${NUM_SQUARES - 1}"]`); //Get the last input of the row
+            if(input === lastInputInRow) {      //If the user is on the last input of the row
+                checkRow(row);  //Once the user hits "enter" the answer gets validated
+            }
+        }   //If the backspace key is pressed
+        if(event.key === "Backspace") {
+            if(input.value === "") {    //If the current input is empty
+                let prevInput = document.querySelector(`.square-input[data-row="${input.dataset.row}"][data-col="${parseInt(input.dataset.col) - 1}"]`);    //Finds the previous text box so we can make the backspace work
+                if(prevInput) prevInput.focus();    //Moves cursor back to previous box
+            }
+            input.value = "";
+            return;
+        }   //If a valid letter is typed (ie not a symbol)
+        if(/^[A-Z]$/.test(key)) {
+            input.value = key;  //Letter inputs only
+            let nextInput = document.querySelector(`.square-input[data-row="${input.dataset.row}"][data-col="${parseInt(input.dataset.col) + 1}"]`);    //Moves to the next textbox
+            if(nextInput) nextInput.focus();    //Automatically moves to the next box
+        }
+    });
+
+    //Enable the first row
+    enableRow(0);
+
+    //Show answer button functionality
+    document.querySelector(".button").addEventListener("click", function() {
+        if(answer) {
+            alert("Answer: " + answer); //Alert pops up with answer before it shows on the button (I used this to test but kept this because I personally liked it)
+            this.innerHTML = answer;    //Shows the correct answer if you click the button "show answer"
+            this.classList.add("revealed");     //Using this to work with my CSS to change the color of the button once the answer is revealed
+        }
+    });
+
+    //Color validating the answers after each guess
+    function checkRow(row) {
+        let guess = "";     //Stores the guess
+        let rowInputs = document.querySelectorAll(`.square-input[data-row="${row}"]`);  //Selects all the inputs in the current row
+        rowInputs.forEach(input => guess += input.value.toUpperCase()); //The entire row (while individual textboxes) becomes 1 word all in uppercase
+        if(guess.length !== NUM_SQUARES) return;    //Will not allow an incomplete guess to be submitted
+
+        let letterCounts = {};      //Tracks the amount of times a letter is in the answer
+        for(let letter of answer) {
+            letterCounts[letter] = (letterCounts[letter] || 0) + 1; //Counts the occurances of each letter
+        }
+
+        for(let i = 0; i < NUM_SQUARES; i++) {
+            let letter = guess[i];  //Gets the guessed letter
+            let input = rowInputs[i];   //Gets the corresponding input box
+            let button = Array.from(document.querySelectorAll(".keyboard-button")).find(btn => btn.textContent === letter); //Finds the matching keyboard button in order to display the color validation there as well
+            
+            if(letter === answer[i]) {  //If the answer is correct and letters are in the right spots
+                input.style.backgroundColor = "#6aaa64";    //Turns green when the correct letter is in the correct position
+                letterCounts[letter]--;     //Reduces count for this letter in the event it appears in the word multiple times
+                if(button) button.style.backgroundColor = "#6aaa64";    //Changes the color on the keyboard green
+            } else if(answer.includes(letter) && letterCounts[letter] > 0) {
+                input.style.backgroundColor = "#c9b458";    //Turns yellow when the correct letter is in the wrong position
+                letterCounts[letter]--; //Reduce count for this letter in the event it appears in the word multiple times
+                if(button) button.style.backgroundColor = "#c9b458";    //Changes the color on the keyboard yellow
+            } else {
+                input.style.backgroundColor = "#878a8c";        //Turns gray when the wrong letter is used
+                if(button) button.style.backgroundColor = "#878a8c";    //Changes the color on the keyboard gray
+            }
+        }
+        if(guess === answer) {  //If the correct answer is guessed
+            setTimeout(() => alert("You guessed it!"));    //When the correct answer occurs an alert will display to let the user know
+            return;
+        }
+        if(currentRow < NUM_ROWS - 1) {     //If the answer is not yet correct and more guesses are available
+            currentRow++;   //Move to the next row
+            enableRow(currentRow);  //Allow the user to type in the next row
+        } else {    //If there are no more available guesses and the answer is wrong
+            setTimeout(() => alert(`Try again next time. The answer was ${answer}.`));     //Once all guesses are exahusted and the answer is still wrong the user is informed
+        }
+    }
+    </script>
+</body>
+</html>
