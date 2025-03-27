@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- INSERT URL HERE -->
+<!-- https://tas895.github.io/wordle/wordle -->
 <html>
 <head>
 <meta charset="UTF-8">
@@ -233,8 +233,8 @@
                 letterCounts[letter]--; //Reduce count for this letter in the event it appears in the word multiple times
                 if(button) button.style.backgroundColor = "#c9b458";    //Changes the color on the keyboard yellow
             } else {
-                input.style.backgroundColor = "#878a8c";        //Turns gray when the wrong letter is used
-                if(button) button.style.backgroundColor = "#878a8c";    //Changes the color on the keyboard gray
+                input.style.backgroundColor = "#ff0000";        //Turns red when the wrong letter is used
+                if(button) button.style.backgroundColor = "#ff0000";    //Changes the color on the keyboard red
             }
         }
         if(guess === answer) {  //If the correct answer is guessed
